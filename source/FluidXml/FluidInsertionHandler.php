@@ -269,12 +269,12 @@ class FluidInsertionHandler
 	            // because its either not special char related
 	            // or its bad enough special char encoding didn't work :O
 	            $defaults = [
-	            	'htmlEntities' => $this->htmlEntities,
+	            	'htmlentities' => $this->htmlEntities,
 		            'exceptionHtmlentities' => $this->encodeOnException,
 	            ];
-	            $encodeArgs = is_array($optionals) ? array_merge($defaults, $optionals) : $defaults;
-	            if($encodeArgs['htmlEntities'] !== null) {
-	            	$args = $encodeArgs['htmlEntities'] === true ? [] : $encodeArgs['htmlEntities'];
+		        $encodeArgs = isset($optionals[1]) && is_array($optionals[1]) ? array_merge($defaults, $optionals[1]) : $defaults;
+		        if($encodeArgs['htmlentities'] !== null) {
+	            	$args = $encodeArgs['htmlentities'] === true ? [] : $encodeArgs['htmlentities'];
 		            $el = $this->createElement($k, htmlentities($v, ...$args));
 		            $el = $fn($parent, $el);
 
