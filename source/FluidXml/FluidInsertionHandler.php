@@ -65,6 +65,7 @@ class FluidInsertionHandler
 
                 foreach ($optionals as $opt) {
                         if (\is_array($opt)) {
+	                            unset($opt['htmlentities'], $opt['exceptionHtmlentities']);
                                 $attributes = $opt;
                                 continue;
                         }
