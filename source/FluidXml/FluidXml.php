@@ -55,7 +55,7 @@ class FluidXml implements FluidInterface
                 // After the FluidDocument model creation, we can proceed to build
                 // the FluidInsertionHandler which requires the model to perform
                 // its logics.
-                $handler = new FluidInsertionHandler($document);
+                $handler = new FluidInsertionHandler($document, $options);
 
                 // Ok, it's time to let them beeing visible along the instance.
                 $this->document = $document;

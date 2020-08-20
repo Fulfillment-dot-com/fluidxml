@@ -4,15 +4,23 @@ namespace FluidXml;
 
 class FluidInsertionHandler
 {
-        private $document;
-        private $dom;
-        private $namespaces;
+        protected $document;
+        protected $dom;
+        protected $namespaces;
+        protected $htmlEntities;
+		protected $encodeOnException;
 
-        public function __construct($document)
+        public function __construct($document, $options = [])
         {
                 $this->document   = $document;
                 $this->dom        = $document->dom;
                 $this->namespaces =& $document->namespaces;
+		        if(isset($options['htmlentities'])) {
+			        $this->htmlEntities = $options['htmlentities'];
+		        }
+		        if(isset($options['exceptionHtmlentities'])) {
+			        $this->encodeOnException = $options['exceptionHtmlentities'];
+		        }
         }
 
         public function insertElement(&$nodes, $element, &$optionals, $fn, $orig_context)
@@ -251,15 +259,49 @@ class FluidInsertionHandler
                 return [];
         }
 
-        protected function insertStringSimple($parent, $k, $v, $fn)
+        protected function insertStringSimple($parent, $k, $v, $fn, &$optionals)
         {
                 // The user has passed an element name and an element value:
                 // [ 'element' => 'Element content' ]
 
-                $el = $this->createElement($k, $v);
-                $el = $fn($parent, $el);
+	            // optimistic encoding handling
+	            // if we do it optimistically we don't want to catch any exceptions
+	            // because its either not special char related
+	            // or its bad enough special char encoding didn't work :O
+	            $defaults = [
+	            	'htmlEntities' => $this->htmlEntities,
+		            'exceptionHtmlentities' => $this->encodeOnException,
+	            ];
+	            $encodeArgs = is_array($optionals) ? array_merge($defaults, $optionals) : $defaults;
+	            if($encodeArgs['htmlEntities'] !== null) {
+	            	$args = $encodeArgs['htmlEntities'] === true ? [] : $encodeArgs['htmlEntities'];
+		            $el = $this->createElement($k, htmlentities($v, ...$args));
+		            $el = $fn($parent, $el);
 
-                return [ $el ];
+		            return [ $el ];
+	            }
+
+		        try
+		        {
+			        $el = $this->createElement($k, $v);
+			        $el = $fn($parent, $el);
+
+			        return [$el];
+		        }
+		        catch (\Exception $e)
+		        {
+			        if ($encodeArgs['exceptionHtmlentities'] !== null
+				        && (stripos($e->getMessage(), 'unterminated entity reference') !== false
+				        || stripos($e->getMessage(), 'invalid character Error') !== false))
+			        {
+				        $args = $encodeArgs['exceptionHtmlentities'] === true ? [] : $encodeArgs['exceptionHtmlentities'];
+				        $el = $this->createElement($k, htmlentities($v, ...$args));
+				        $el = $fn($parent, $el);
+				        return [$el];
+			        }
+
+			        throw $e;
+		        }
         }
 
         protected function insertStringMixed($parent, $k, $v, $fn, &$optionals)
